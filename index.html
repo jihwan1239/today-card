@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="오늘 뭐로 긁지" />
 <meta name="mobile-web-app-capable" content="yes" />
 <title>오늘 뭐로 긁지</title>
-<meta name="app-build" content="v5-chip-redesign" />
+<meta name="app-build" content="v6-pending-link" />
 
 <!-- PWA 파일 연결 -->
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
@@ -310,6 +310,7 @@ function CardPicker() {
     const [cards, setCards] = useState(DEFAULT_CARDS);
     const [txns, setTxns] = useState([]);
     const [otherBilling, setOtherBilling] = useState({});
+    const [focusPending, setFocusPending] = useState(0);
     const [loaded, setLoaded] = useState(false);
     const [storageOk, setStorageOk] = useState(true);
     const [lastSaved, setLastSaved] = useState(null);
@@ -619,15 +620,15 @@ function CardPicker() {
             React.createElement("div", { style: S.headerEyebrow }, "지갑 속 3장, 매번 정답은 하나"),
             React.createElement("h1", { style: S.headerTitle }, "오늘 뭐로 긁지")),
         !storageOk && (React.createElement("div", { style: S.errorBanner }, "저장 기능을 쓸 수 없는 환경이에요. 지금 입력한 내용은 화면을 닫으면 사라집니다.")),
-        React.createElement(SummaryBar, { S: S, summary: summary }),
+        React.createElement(SummaryBar, { S: S, summary: summary, onPendingClick: () => { setTab("status"); setResult(null); setFocusPending((n) => n + 1); } }),
         tab === "recommend" && (React.createElement(RecommendTab, { S: S, T: T, category: category, setCategory: setCategory, amount: amount, setAmount: setAmount, months: months, setMonths: setMonths, runRecommend: runRecommend, result: result, logTxn: logTxn, cards: cards, tierInfo: tierInfo, capWarnings: capWarnings })),
-        tab === "status" && (React.createElement(StatusTab, { S: S, cards: cards, tierInfo: tierInfo, usageByCard: usageByCard, txns: txns, thisMonth: thisMonth, lastMonth: lastMonth, thisMonthTotals: thisMonthTotals, deleteTxn: deleteTxn, confirmTxn: confirmTxn })),
+        tab === "status" && (React.createElement(StatusTab, { S: S, cards: cards, tierInfo: tierInfo, usageByCard: usageByCard, txns: txns, thisMonth: thisMonth, lastMonth: lastMonth, thisMonthTotals: thisMonthTotals, deleteTxn: deleteTxn, confirmTxn: confirmTxn, focusPending: focusPending })),
         tab === "settings" && (React.createElement(SettingsTab, { S: S, cards: cards, updateCard: updateCard, resetDefaults: () => saveCards(DEFAULT_CARDS), storageOk: storageOk, lastSaved: lastSaved, txnCount: txns.length, thisMonthKey: thisMonth, prevMonthKey: lastMonth, otherBilling: otherBilling, saveOther: saveOther, payMonth: summary.payMonth })),
         React.createElement("nav", { style: S.tabbar }, [["recommend", "추천"], ["status", "이번 달 현황"], ["settings", "카드 설정"]].map(([k, label]) => (React.createElement("button", { key: k, onClick: () => { setTab(k); setResult(null); }, style: { ...S.tabBtn, ...(tab === k ? S.tabBtnActive : {}) } }, label))))));
 }
 
 /* ============ 요약 ============ */
-function SummaryBar({ S, summary }) {
+function SummaryBar({ S, summary, onPendingClick }) {
     const pm = Number(summary.payMonth.slice(5));
     return (React.createElement("div", { style: { margin: "0 16px 18px" } },
         // 출금 예정 — 가장 중요한 숫자라 크게 단독 배치
@@ -651,11 +652,16 @@ function SummaryBar({ S, summary }) {
                 React.createElement("div", { style: S.summaryLabel }, "당월 파킹률"),
                 React.createElement("div", { style: { ...S.summaryValue, color: S.summaryValueAccent.color } }, summary.parkingRate == null ? "—" : `${summary.parkingRate.toFixed(2)}%`),
                 React.createElement("div", { style: S.summaryFoot }, "혜택 ", fmt(summary.reward), "원")),
-            summary.pendingCount > 0 && React.createElement("div", { style: { ...S.summaryCell, gridColumn: "1 / -1", borderColor: S.pendingBorder } },
+            summary.pendingCount > 0 && React.createElement("button", {
+                className: "chip",
+                onClick: onPendingClick,
+                style: { ...S.summaryCell, ...S.pendingCard, gridColumn: "1 / -1", borderColor: S.pendingBorder } },
                 React.createElement("div", { style: S.pendingRow },
                     React.createElement("span", { style: S.summaryLabel }, `확정 대기 ${summary.pendingCount}건`),
                     React.createElement("span", { style: S.pendingValue }, fmt(summary.pending), "원")),
-                React.createElement("div", { style: S.summaryFoot }, "실제 결제 금액을 입력하면 실적에 반영돼요"))),
+                React.createElement("div", { style: S.pendingFootRow },
+                    React.createElement("span", null, "실제 결제 금액을 입력하면 실적에 반영돼요"),
+                    React.createElement("span", { style: S.pendingArrow }, "확정하러 가기 ›")))),
         React.createElement("div", { style: S.summaryHint },
             React.createElement("b", null, "당월 이용"), "은 달력 기준(1일~말일) 실적·적립용, ",
             React.createElement("b", null, "출금 예정"), "은 카드사 청구주기(신한 전월12일~당월11일 / 삼성 전월13일~당월12일) 기준이라 두 값은 다릅니다.")));
@@ -712,7 +718,12 @@ function RecommendTab({ S, T, category, setCategory, amount, setAmount, months, 
 }
 
 /* ============ 현황 ============ */
-function StatusTab({ S, cards, tierInfo, usageByCard, txns, thisMonth, lastMonth, thisMonthTotals, deleteTxn, confirmTxn }) {
+function StatusTab({ S, cards, tierInfo, usageByCard, txns, thisMonth, lastMonth, thisMonthTotals, deleteTxn, confirmTxn, focusPending }) {
+    const pendingRef = React.useRef(null);
+    React.useEffect(() => {
+        if (focusPending && pendingRef.current)
+            pendingRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, [focusPending]);
     const [editingId, setEditingId] = useState(null);
     const [editAmount, setEditAmount] = useState("");
     const [editMonths, setEditMonths] = useState(1);
@@ -766,7 +777,7 @@ function StatusTab({ S, cards, tierInfo, usageByCard, txns, thisMonth, lastMonth
                 }),
                 React.createElement("div", { style: S.noteList }, (c.notes || []).map((n, i) => React.createElement("div", { key: i, style: S.noteItem }, "· ", n)))));
         }),
-        React.createElement("section", { style: S.card },
+        React.createElement("section", { ref: pendingRef, style: { ...S.card, ...(pending.length > 0 ? S.pendingSection : {}) } },
             React.createElement("div", { style: S.label }, "예상 결제 (확정 대기) · ", pending.length, "건"),
             pending.length === 0 && React.createElement("div", { style: S.emptyState }, "확정 대기 중인 결제가 없어요."),
             pending.map((t) => {
@@ -943,6 +954,10 @@ function makeStyles(T) {
         badgeNow: { fontSize: 10, fontWeight: 700, color: T.accent, background: T.accentSoft, padding: "2px 7px", borderRadius: 999, marginLeft: 6 },
         pendingRow: { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 },
         pendingValue: { fontSize: 16, fontWeight: 800, color: T.warn },
+        pendingCard: { textAlign: "left", width: "100%", cursor: "pointer", font: "inherit", background: T.warnBg, borderStyle: "solid", borderWidth: 1 },
+        pendingFootRow: { display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginTop: 5, fontSize: 10.5, color: T.textFaint },
+        pendingArrow: { color: T.warn, fontWeight: 700, whiteSpace: "nowrap" },
+        pendingSection: { borderColor: T.warn + "66", background: T.warnBg },
         summaryHint: { marginTop: 10, fontSize: 11, color: T.textFaint, lineHeight: 1.65, padding: "0 2px" },
         main: { padding: "0 16px", display: "flex", flexDirection: "column", gap: 14 },
         card: { background: T.surface, border: `1px solid ${T.border}`, borderRadius: 18, padding: 18 },
