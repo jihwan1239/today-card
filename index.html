@@ -8,7 +8,7 @@
 <meta name="apple-mobile-web-app-title" content="오늘 뭐로 긁지" />
 <meta name="mobile-web-app-capable" content="yes" />
 <title>오늘 뭐로 긁지</title>
-<meta name="app-build" content="v6-pending-link" />
+<meta name="app-build" content="v7-categories-search" />
 
 <!-- PWA 파일 연결 -->
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
@@ -102,10 +102,37 @@ function numberToKorean(num) {
 /* ================================================================
    카드 모델
 ================================================================= */
-const ALL_CATEGORIES = [
-    "음식점", "카페", "편의점", "쿠팡", "택시",
-    "생활/패션/KTX", "해외", "백화점/주유", "온라인결제", "통신비", "구독/멤버십", "기타",
+const CATEGORY_GROUPS = [
+    { section: "식음료", items: ["음식점", "카페", "배달앱", "편의점"] },
+    { section: "교통", items: ["택시", "대중교통/KTX", "주유"] },
+    { section: "쇼핑", items: ["쿠팡", "온라인쇼핑", "마트/생활", "패션/뷰티", "백화점/면세점"] },
+    { section: "정기결제", items: ["통신비", "멤버십", "OTT/구독"] },
+    { section: "기타", items: ["해외결제", "병원/약국", "보험", "문화/여가", "기타"] },
 ];
+const ALL_CATEGORIES = CATEGORY_GROUPS.reduce((a, g) => a.concat(g.items), []);
+// 검색용 키워드 (이용처 이름으로 찾을 수 있게)
+const CATEGORY_KEYWORDS = {
+    "음식점": ["식당", "밥", "고기", "한식", "중식", "일식", "양식", "회", "국밥", "면옥", "레스토랑", "술집", "포차"],
+    "카페": ["커피", "스타벅스", "스벅", "투썸", "이디야", "메가", "빽다방", "컴포즈", "디저트", "베이커리", "빵"],
+    "배달앱": ["쿠팡이츠", "배달의민족", "배민", "요기요", "배달"],
+    "편의점": ["cu", "씨유", "gs25", "지에스", "세븐일레븐", "이마트24", "미니스톱"],
+    "택시": ["카카오t", "카카오택시", "우버", "타다", "택시비"],
+    "대중교통/KTX": ["ktx", "기차", "철도", "코레일", "지하철", "버스", "srt", "교통카드"],
+    "주유": ["주유소", "기름", "sk에너지", "gs칼텍스", "s-oil", "현대오일", "충전", "전기차"],
+    "쿠팡": ["coupang", "로켓배송", "쿠팡와우"],
+    "온라인쇼핑": ["네이버페이", "지마켓", "11번가", "ssg", "쓱", "옥션", "무신사", "컬리", "알리", "테무", "인터넷쇼핑", "간편결제", "토스페이", "카카오페이"],
+    "마트/생활": ["이마트", "홈플러스", "롯데마트", "다이소", "생활용품", "잡화", "꽃집", "플라워", "철물"],
+    "패션/뷰티": ["옷", "의류", "신발", "미용실", "헤어", "네일", "화장품", "올리브영", "뷰티", "패션"],
+    "백화점/면세점": ["백화점", "현대백화점", "신세계", "롯데백화점", "면세점", "아울렛", "롯데몰", "스타필드"],
+    "통신비": ["skt", "kt", "lg유플러스", "유플러스", "핸드폰", "휴대폰", "요금제", "알뜰폰"],
+    "멤버십": ["쿠팡와우", "네이버플러스", "와우멤버십", "멤버쉽"],
+    "OTT/구독": ["넷플릭스", "유튜브", "디즈니", "왓챠", "티빙", "웨이브", "스포티파이", "애플", "apple", "구글", "chatgpt", "클로드", "구독"],
+    "해외결제": ["해외", "외화", "달러", "직구", "amazon", "아마존"],
+    "병원/약국": ["병원", "의원", "약국", "치과", "한의원", "진료", "clinic"],
+    "보험": ["보험료", "생명", "손해보험", "실비"],
+    "문화/여가": ["cgv", "메가박스", "롯데시네마", "영화", "공연", "전시", "헬스", "짐", "pt", "골프", "노래방"],
+    "기타": ["관리비", "세금", "공과금", "기부"],
+};
 const DEFAULT_CARDS = [
     {
         id: "shinhan",
@@ -138,13 +165,21 @@ const DEFAULT_CARDS = [
             "카페": { rate: 5, group: "오늘도 5%", perTxnCap: 10000 },
             "편의점": { rate: 5, group: "오늘도 5%", perTxnCap: 10000 },
             "쿠팡": { rate: 5, group: "오늘도 5%", perTxnCap: 10000 },
+            "배달앱": { rate: 0, group: null, perTxnCap: null },
             "택시": { rate: 5, group: "일상 속 5%", perTxnCap: 50000 },
-            "생활/패션/KTX": { rate: 5, group: "일상 속 5%", perTxnCap: 50000 },
-            "해외": { rate: 5, group: "일상 속 5%", perTxnCap: 50000 },
-            "백화점/주유": { rate: 0, group: null, perTxnCap: null },
-            "온라인결제": { rate: 0, group: null, perTxnCap: null },
+            "대중교통/KTX": { rate: 5, group: "일상 속 5%", perTxnCap: 50000 },
+            "마트/생활": { rate: 5, group: "일상 속 5%", perTxnCap: 50000 },
+            "패션/뷰티": { rate: 5, group: "일상 속 5%", perTxnCap: 50000 },
+            "해외결제": { rate: 5, group: "일상 속 5%", perTxnCap: 50000 },
+            "주유": { rate: 0, group: null, perTxnCap: null },
+            "온라인쇼핑": { rate: 0, group: null, perTxnCap: null },
+            "백화점/면세점": { rate: 0, group: null, perTxnCap: null },
             "통신비": { rate: 10, group: "정기결제", perTxnCap: 30000 },
-            "구독/멤버십": { rate: 20, group: "정기결제", perTxnCap: null },
+            "멤버십": { rate: 20, group: "정기결제", perTxnCap: null },
+            "OTT/구독": { rate: 15, group: "정기결제", perTxnCap: null },
+            "병원/약국": { rate: 0, group: null, perTxnCap: null },
+            "보험": { rate: 0, group: null, perTxnCap: null },
+            "문화/여가": { rate: 0, group: null, perTxnCap: null },
             "기타": { rate: 0, group: null, perTxnCap: null },
         },
     },
@@ -173,16 +208,24 @@ const DEFAULT_CARDS = [
         ],
         rates: {
             "택시": { miles: 2, group: "특별적립", perTxnCap: null },
-            "생활/패션/KTX": { miles: 1, group: null, perTxnCap: null },
-            "해외": { miles: 1, group: null, perTxnCap: null },
             "카페": { miles: 2, group: "특별적립", perTxnCap: null },
             "편의점": { miles: 2, group: "특별적립", perTxnCap: null },
-            "백화점/주유": { miles: 2, group: "특별적립", perTxnCap: null },
+            "백화점/면세점": { miles: 2, group: "특별적립", perTxnCap: null },
+            "주유": { miles: 2, group: "특별적립", perTxnCap: null },
             "음식점": { miles: 1, group: null, perTxnCap: null },
-            "온라인결제": { miles: 1, group: null, perTxnCap: null },
+            "배달앱": { miles: 1, group: null, perTxnCap: null },
+            "대중교통/KTX": { miles: 1, group: null, perTxnCap: null },
             "쿠팡": { miles: 1, group: null, perTxnCap: null },
+            "온라인쇼핑": { miles: 1, group: null, perTxnCap: null },
+            "마트/생활": { miles: 1, group: null, perTxnCap: null },
+            "패션/뷰티": { miles: 1, group: null, perTxnCap: null },
             "통신비": { miles: 1, group: null, perTxnCap: null },
-            "구독/멤버십": { miles: 1, group: null, perTxnCap: null },
+            "멤버십": { miles: 1, group: null, perTxnCap: null },
+            "OTT/구독": { miles: 1, group: null, perTxnCap: null },
+            "해외결제": { miles: 1, group: null, perTxnCap: null },
+            "병원/약국": { miles: 1, group: null, perTxnCap: null },
+            "보험": { miles: 1, group: null, perTxnCap: null },
+            "문화/여가": { miles: 1, group: null, perTxnCap: null },
             "기타": { miles: 1, group: null, perTxnCap: null },
         },
     },
@@ -203,6 +246,7 @@ const DEFAULT_CARDS = [
         groups: {
             "온라인/간편결제": { caps: [10000, 20000, 30000], dailyCap: null },
             "디지털 구독": { caps: [5000, 10000, 10000], dailyCap: null },
+            "카페할인": { caps: [5000, 5000, 5000], dailyCap: null },
         },
         notes: [
             "⚠ 구간별 한도는 추정치예요. 삼성카드 앱 상품설명서 숫자로 꼭 바꿔주세요.",
@@ -214,23 +258,31 @@ const DEFAULT_CARDS = [
         ],
         rates: {
             "쿠팡": { rate: 10, group: "온라인/간편결제", perTxnCap: null },
-            "온라인결제": { rate: 10, group: "온라인/간편결제", perTxnCap: null },
-            "구독/멤버십": { rate: 50, group: "디지털 구독", perTxnCap: null },
-            "카페": { rate: 0, group: null, perTxnCap: null },
+            "온라인쇼핑": { rate: 10, group: "온라인/간편결제", perTxnCap: null },
+            "멤버십": { rate: 10, group: "온라인/간편결제", perTxnCap: null },
+            "OTT/구독": { rate: 50, group: "디지털 구독", perTxnCap: null },
+            "카페": { rate: 50, group: "카페할인", perTxnCap: null },
+            "해외결제": { rate: 2, group: null, perTxnCap: null },
             "음식점": { rate: 0, group: null, perTxnCap: null },
-            "택시": { rate: 0, group: null, perTxnCap: null },
-            "생활/패션/KTX": { rate: 0, group: null, perTxnCap: null },
-            "해외": { rate: 2, group: null, perTxnCap: null },
+            "배달앱": { rate: 0, group: null, perTxnCap: null },
             "편의점": { rate: 0, group: null, perTxnCap: null },
+            "택시": { rate: 0, group: null, perTxnCap: null },
+            "대중교통/KTX": { rate: 0, group: null, perTxnCap: null },
+            "주유": { rate: 0, group: null, perTxnCap: null },
+            "마트/생활": { rate: 0, group: null, perTxnCap: null },
+            "패션/뷰티": { rate: 0, group: null, perTxnCap: null },
+            "백화점/면세점": { rate: 0, group: null, perTxnCap: null },
             "통신비": { rate: 0, group: null, perTxnCap: null },
-            "백화점/주유": { rate: 0, group: null, perTxnCap: null },
+            "병원/약국": { rate: 0, group: null, perTxnCap: null },
+            "보험": { rate: 0, group: null, perTxnCap: null },
+            "문화/여가": { rate: 0, group: null, perTxnCap: null },
             "기타": { rate: 0, group: null, perTxnCap: null },
         },
     },
 ];
 const INSTALLMENT_OPTIONS = [1, 2, 3, 6, 12];
-const SEED_FLAG = "seed-aug2026-r2";
-const SEED_TXNS = [{"id":"imp_0","date":"2026-08-01","cardId":"shinhan","category":"택시","amount":20400,"capUsed":1020.0,"rewardValue":1020.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_1","date":"2026-08-01","cardId":"shinhan","category":"음식점","amount":72000,"capUsed":500.0,"rewardValue":500.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_2","date":"2026-08-01","cardId":"shinhan","category":"백화점/주유","amount":193000,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":3,"status":"confirmed"},{"id":"imp_3","date":"2026-08-01","cardId":"shinhan","category":"백화점/주유","amount":79000,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":3,"status":"confirmed"},{"id":"imp_4","date":"2026-08-01","cardId":"toss_samsung","category":"택시","amount":23900,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_5","date":"2026-08-01","cardId":"toss_samsung","category":"기타","amount":14920,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_6","date":"2026-08-01","cardId":"toss_samsung","category":"쿠팡","amount":7500,"capUsed":750.0,"rewardValue":750.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_7","date":"2026-08-02","cardId":"shinhan","category":"음식점","amount":31000,"capUsed":500.0,"rewardValue":500.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_8","date":"2026-08-02","cardId":"shinhan","category":"편의점","amount":2500,"capUsed":125.0,"rewardValue":125.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_9","date":"2026-08-02","cardId":"shinhan","category":"택시","amount":19700,"capUsed":985.0,"rewardValue":985.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_10","date":"2026-08-03","cardId":"shinhan","category":"택시","amount":7800,"capUsed":390.0,"rewardValue":390.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_11","date":"2026-08-03","cardId":"shinhan","category":"온라인결제","amount":54000,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":3,"status":"confirmed"},{"id":"imp_12","date":"2026-08-04","cardId":"toss_samsung","category":"해외","amount":166897,"capUsed":0,"rewardValue":3337.94,"installmentMonths":1,"status":"confirmed"},{"id":"imp_13","date":"2026-08-05","cardId":"shinhan","category":"생활/패션/KTX","amount":2600,"capUsed":130.0,"rewardValue":130.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_14","date":"2026-08-06","cardId":"shinhan","category":"생활/패션/KTX","amount":4800,"capUsed":240.0,"rewardValue":240.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_15","date":"2026-08-07","cardId":"shinhan","category":"택시","amount":7700,"capUsed":385.0,"rewardValue":385.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_16","date":"2026-08-08","cardId":"shinhan","category":"택시","amount":7800,"capUsed":390.0,"rewardValue":390.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_17","date":"2026-08-08","cardId":"toss_samsung","category":"온라인결제","amount":85378,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":3,"status":"confirmed"},{"id":"imp_18","date":"2026-08-09","cardId":"shinhan","category":"온라인결제","amount":14000,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_19","date":"2026-08-09","cardId":"toss_samsung","category":"쿠팡","amount":12400,"capUsed":1240.0,"rewardValue":1240.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_20","date":"2026-08-11","cardId":"shinhan","category":"택시","amount":8400,"capUsed":420.0,"rewardValue":420.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_21","date":"2026-08-11","cardId":"shinhan","category":"온라인결제","amount":33000,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_22","date":"2026-08-12","cardId":"shinhan","category":"택시","amount":7800,"capUsed":390.0,"rewardValue":390.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_23","date":"2026-08-13","cardId":"toss_samsung","category":"쿠팡","amount":5980,"capUsed":598.0,"rewardValue":598.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_24","date":"2026-08-13","cardId":"toss_samsung","category":"쿠팡","amount":14500,"capUsed":1450.0,"rewardValue":1450.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_25","date":"2026-08-14","cardId":"shinhan","category":"생활/패션/KTX","amount":2600,"capUsed":130.0,"rewardValue":130.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_26","date":"2026-08-15","cardId":"shinhan","category":"해외","amount":7943,"capUsed":397.15,"rewardValue":397.15,"installmentMonths":1,"status":"confirmed"},{"id":"imp_27","date":"2026-08-15","cardId":"shinhan","category":"해외","amount":7943,"capUsed":397.15,"rewardValue":397.15,"installmentMonths":1,"status":"confirmed"},{"id":"imp_28","date":"2026-08-15","cardId":"toss_samsung","category":"쿠팡","amount":10600,"capUsed":1060.0,"rewardValue":1060.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_29","date":"2026-08-15","cardId":"toss_samsung","category":"쿠팡","amount":19090,"capUsed":1909.0,"rewardValue":1909.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_30","date":"2026-08-15","cardId":"toss_samsung","category":"온라인결제","amount":32000,"capUsed":2993.0,"rewardValue":2993.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_31","date":"2026-08-16","cardId":"shinhan","category":"기타","amount":1100,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_32","date":"2026-08-16","cardId":"shinhan","category":"편의점","amount":3000,"capUsed":150.0,"rewardValue":150.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_33","date":"2026-08-16","cardId":"shinhan","category":"백화점/주유","amount":55000,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":3,"status":"confirmed"},{"id":"imp_34","date":"2026-08-16","cardId":"shinhan","category":"생활/패션/KTX","amount":12000,"capUsed":600.0,"rewardValue":600.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_35","date":"2026-08-16","cardId":"toss_samsung","category":"음식점","amount":11000,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_36","date":"2026-08-17","cardId":"shinhan","category":"음식점","amount":53000,"capUsed":500.0,"rewardValue":500.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_37","date":"2026-08-17","cardId":"shinhan","category":"편의점","amount":6050,"capUsed":302.5,"rewardValue":302.5,"installmentMonths":1,"status":"confirmed"},{"id":"imp_38","date":"2026-08-17","cardId":"shinhan","category":"택시","amount":20200,"capUsed":1010.0,"rewardValue":1010.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_39","date":"2026-08-17","cardId":"toss_samsung","category":"음식점","amount":19910,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_40","date":"2026-08-18","cardId":"shinhan","category":"생활/패션/KTX","amount":462000,"capUsed":2500.0,"rewardValue":2500.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_41","date":"2026-08-18","cardId":"toss_samsung","category":"온라인결제","amount":33000,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_42","date":"2026-08-19","cardId":"toss_samsung","category":"편의점","amount":14100,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_43","date":"2026-08-21","cardId":"shinhan","category":"생활/패션/KTX","amount":15000,"capUsed":750.0,"rewardValue":750.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_44","date":"2026-08-21","cardId":"shinhan","category":"택시","amount":23800,"capUsed":1190.0,"rewardValue":1190.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_45","date":"2026-08-21","cardId":"toss_samsung","category":"기타","amount":40000,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_46","date":"2026-08-21","cardId":"toss_samsung","category":"음식점","amount":48200,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_47","date":"2026-08-21","cardId":"toss_samsung","category":"음식점","amount":19910,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_48","date":"2026-08-22","cardId":"shinhan","category":"쿠팡","amount":5800,"capUsed":290.0,"rewardValue":290.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_49","date":"2026-08-22","cardId":"skypass","category":"카페","amount":1800,"capUsed":2,"rewardValue":30,"installmentMonths":1,"status":"confirmed"},{"id":"imp_50","date":"2026-08-22","cardId":"toss_samsung","category":"쿠팡","amount":5680,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_51","date":"2026-08-23","cardId":"skypass","category":"택시","amount":23500,"capUsed":46,"rewardValue":690,"installmentMonths":1,"status":"confirmed"},{"id":"imp_52","date":"2026-08-23","cardId":"skypass","category":"택시","amount":20800,"capUsed":40,"rewardValue":600,"installmentMonths":1,"status":"confirmed"},{"id":"imp_53","date":"2026-08-23","cardId":"skypass","category":"음식점","amount":19910,"capUsed":0.0,"rewardValue":285,"installmentMonths":1,"status":"confirmed"}];
+const SEED_FLAG = "seed-aug2026-r3";
+const SEED_TXNS = [{"id":"imp_0","date":"2026-08-01","cardId":"shinhan","category":"택시","amount":20400,"capUsed":1020.0,"rewardValue":1020.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_1","date":"2026-08-01","cardId":"shinhan","category":"음식점","amount":72000,"capUsed":500.0,"rewardValue":500.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_2","date":"2026-08-01","cardId":"shinhan","category":"백화점/면세점","amount":193000,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":3,"status":"confirmed"},{"id":"imp_3","date":"2026-08-01","cardId":"shinhan","category":"백화점/면세점","amount":79000,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":3,"status":"confirmed"},{"id":"imp_4","date":"2026-08-01","cardId":"toss_samsung","category":"택시","amount":23900,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_5","date":"2026-08-01","cardId":"toss_samsung","category":"보험","amount":14920,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_6","date":"2026-08-01","cardId":"toss_samsung","category":"쿠팡","amount":7500,"capUsed":750.0,"rewardValue":750.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_7","date":"2026-08-02","cardId":"shinhan","category":"음식점","amount":31000,"capUsed":500.0,"rewardValue":500.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_8","date":"2026-08-02","cardId":"shinhan","category":"편의점","amount":2500,"capUsed":125.0,"rewardValue":125.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_9","date":"2026-08-02","cardId":"shinhan","category":"택시","amount":19700,"capUsed":985.0,"rewardValue":985.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_10","date":"2026-08-03","cardId":"shinhan","category":"택시","amount":7800,"capUsed":390.0,"rewardValue":390.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_11","date":"2026-08-03","cardId":"shinhan","category":"온라인쇼핑","amount":54000,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":3,"status":"confirmed"},{"id":"imp_12","date":"2026-08-04","cardId":"toss_samsung","category":"해외결제","amount":166897,"capUsed":0,"rewardValue":3337.94,"installmentMonths":1,"status":"confirmed"},{"id":"imp_13","date":"2026-08-05","cardId":"shinhan","category":"대중교통/KTX","amount":2600,"capUsed":130.0,"rewardValue":130.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_14","date":"2026-08-06","cardId":"shinhan","category":"대중교통/KTX","amount":4800,"capUsed":240.0,"rewardValue":240.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_15","date":"2026-08-07","cardId":"shinhan","category":"택시","amount":7700,"capUsed":385.0,"rewardValue":385.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_16","date":"2026-08-08","cardId":"shinhan","category":"택시","amount":7800,"capUsed":390.0,"rewardValue":390.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_17","date":"2026-08-08","cardId":"toss_samsung","category":"온라인쇼핑","amount":85378,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":3,"status":"confirmed"},{"id":"imp_18","date":"2026-08-09","cardId":"shinhan","category":"OTT/구독","amount":14000,"capUsed":2100.0,"rewardValue":2100.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_19","date":"2026-08-09","cardId":"toss_samsung","category":"쿠팡","amount":12400,"capUsed":1240.0,"rewardValue":1240.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_20","date":"2026-08-11","cardId":"shinhan","category":"택시","amount":8400,"capUsed":420.0,"rewardValue":420.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_21","date":"2026-08-11","cardId":"shinhan","category":"OTT/구독","amount":33000,"capUsed":4950.0,"rewardValue":4950.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_22","date":"2026-08-12","cardId":"shinhan","category":"택시","amount":7800,"capUsed":390.0,"rewardValue":390.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_23","date":"2026-08-13","cardId":"toss_samsung","category":"쿠팡","amount":5980,"capUsed":598.0,"rewardValue":598.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_24","date":"2026-08-13","cardId":"toss_samsung","category":"쿠팡","amount":14500,"capUsed":1450.0,"rewardValue":1450.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_25","date":"2026-08-14","cardId":"shinhan","category":"대중교통/KTX","amount":2600,"capUsed":130.0,"rewardValue":130.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_26","date":"2026-08-15","cardId":"shinhan","category":"해외결제","amount":7943,"capUsed":397.15,"rewardValue":397.15,"installmentMonths":1,"status":"confirmed"},{"id":"imp_27","date":"2026-08-15","cardId":"shinhan","category":"해외결제","amount":7943,"capUsed":397.15,"rewardValue":397.15,"installmentMonths":1,"status":"confirmed"},{"id":"imp_28","date":"2026-08-15","cardId":"toss_samsung","category":"쿠팡","amount":10600,"capUsed":1060.0,"rewardValue":1060.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_29","date":"2026-08-15","cardId":"toss_samsung","category":"쿠팡","amount":19090,"capUsed":1909.0,"rewardValue":1909.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_30","date":"2026-08-15","cardId":"toss_samsung","category":"온라인쇼핑","amount":32000,"capUsed":2993.0,"rewardValue":2993.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_31","date":"2026-08-16","cardId":"shinhan","category":"기타","amount":1100,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_32","date":"2026-08-16","cardId":"shinhan","category":"편의점","amount":3000,"capUsed":150.0,"rewardValue":150.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_33","date":"2026-08-16","cardId":"shinhan","category":"백화점/면세점","amount":55000,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":3,"status":"confirmed"},{"id":"imp_34","date":"2026-08-16","cardId":"shinhan","category":"마트/생활","amount":12000,"capUsed":600.0,"rewardValue":600.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_35","date":"2026-08-16","cardId":"toss_samsung","category":"배달앱","amount":11000,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_36","date":"2026-08-17","cardId":"shinhan","category":"음식점","amount":53000,"capUsed":500.0,"rewardValue":500.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_37","date":"2026-08-17","cardId":"shinhan","category":"편의점","amount":6050,"capUsed":302.5,"rewardValue":302.5,"installmentMonths":1,"status":"confirmed"},{"id":"imp_38","date":"2026-08-17","cardId":"shinhan","category":"택시","amount":20200,"capUsed":1010.0,"rewardValue":1010.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_39","date":"2026-08-17","cardId":"toss_samsung","category":"배달앱","amount":19910,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_40","date":"2026-08-18","cardId":"shinhan","category":"패션/뷰티","amount":462000,"capUsed":2500.0,"rewardValue":2500.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_41","date":"2026-08-18","cardId":"toss_samsung","category":"온라인쇼핑","amount":33000,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_42","date":"2026-08-19","cardId":"toss_samsung","category":"편의점","amount":14100,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_43","date":"2026-08-21","cardId":"shinhan","category":"마트/생활","amount":15000,"capUsed":750.0,"rewardValue":750.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_44","date":"2026-08-21","cardId":"shinhan","category":"택시","amount":23800,"capUsed":1190.0,"rewardValue":1190.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_45","date":"2026-08-21","cardId":"toss_samsung","category":"문화/여가","amount":40000,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_46","date":"2026-08-21","cardId":"toss_samsung","category":"음식점","amount":48200,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_47","date":"2026-08-21","cardId":"toss_samsung","category":"배달앱","amount":19910,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_48","date":"2026-08-22","cardId":"shinhan","category":"쿠팡","amount":5800,"capUsed":290.0,"rewardValue":290.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_49","date":"2026-08-22","cardId":"skypass","category":"카페","amount":1800,"capUsed":2,"rewardValue":30,"installmentMonths":1,"status":"confirmed"},{"id":"imp_50","date":"2026-08-22","cardId":"toss_samsung","category":"쿠팡","amount":5680,"capUsed":0.0,"rewardValue":0.0,"installmentMonths":1,"status":"confirmed"},{"id":"imp_51","date":"2026-08-23","cardId":"skypass","category":"택시","amount":23500,"capUsed":46,"rewardValue":690,"installmentMonths":1,"status":"confirmed"},{"id":"imp_52","date":"2026-08-23","cardId":"skypass","category":"택시","amount":20800,"capUsed":40,"rewardValue":600,"installmentMonths":1,"status":"confirmed"},{"id":"imp_53","date":"2026-08-23","cardId":"skypass","category":"배달앱","amount":19910,"capUsed":0.0,"rewardValue":285,"installmentMonths":1,"status":"confirmed"}];
 const STORAGE_OTHER = "card-other-v1";
 const STORAGE_CARDS = "card-configs-v5";
 const STORAGE_TXNS = "card-txns-v5";
@@ -316,6 +368,7 @@ function CardPicker() {
     const [lastSaved, setLastSaved] = useState(null);
     const [tab, setTab] = useState("recommend");
     const [category, setCategory] = useState("음식점");
+    const [catQuery, setCatQuery] = useState("");
     const [amount, setAmount] = useState("");
     const [months, setMonths] = useState(1);
     const [result, setResult] = useState(null);
@@ -621,7 +674,7 @@ function CardPicker() {
             React.createElement("h1", { style: S.headerTitle }, "오늘 뭐로 긁지")),
         !storageOk && (React.createElement("div", { style: S.errorBanner }, "저장 기능을 쓸 수 없는 환경이에요. 지금 입력한 내용은 화면을 닫으면 사라집니다.")),
         React.createElement(SummaryBar, { S: S, summary: summary, onPendingClick: () => { setTab("status"); setResult(null); setFocusPending((n) => n + 1); } }),
-        tab === "recommend" && (React.createElement(RecommendTab, { S: S, T: T, category: category, setCategory: setCategory, amount: amount, setAmount: setAmount, months: months, setMonths: setMonths, runRecommend: runRecommend, result: result, logTxn: logTxn, cards: cards, tierInfo: tierInfo, capWarnings: capWarnings })),
+        tab === "recommend" && (React.createElement(RecommendTab, { S: S, T: T, catQuery: catQuery, setCatQuery: setCatQuery, category: category, setCategory: setCategory, amount: amount, setAmount: setAmount, months: months, setMonths: setMonths, runRecommend: runRecommend, result: result, logTxn: logTxn, cards: cards, tierInfo: tierInfo, capWarnings: capWarnings })),
         tab === "status" && (React.createElement(StatusTab, { S: S, cards: cards, tierInfo: tierInfo, usageByCard: usageByCard, txns: txns, thisMonth: thisMonth, lastMonth: lastMonth, thisMonthTotals: thisMonthTotals, deleteTxn: deleteTxn, confirmTxn: confirmTxn, focusPending: focusPending })),
         tab === "settings" && (React.createElement(SettingsTab, { S: S, cards: cards, updateCard: updateCard, resetDefaults: () => saveCards(DEFAULT_CARDS), storageOk: storageOk, lastSaved: lastSaved, txnCount: txns.length, thisMonthKey: thisMonth, prevMonthKey: lastMonth, otherBilling: otherBilling, saveOther: saveOther, payMonth: summary.payMonth })),
         React.createElement("nav", { style: S.tabbar }, [["recommend", "추천"], ["status", "이번 달 현황"], ["settings", "카드 설정"]].map(([k, label]) => (React.createElement("button", { key: k, onClick: () => { setTab(k); setResult(null); }, style: { ...S.tabBtn, ...(tab === k ? S.tabBtnActive : {}) } }, label))))));
@@ -668,11 +721,34 @@ function SummaryBar({ S, summary, onPendingClick }) {
 }
 
 /* ============ 추천 ============ */
-function RecommendTab({ S, T, category, setCategory, amount, setAmount, months, setMonths, runRecommend, result, logTxn, cards, tierInfo, capWarnings }) {
+function RecommendTab({ S, T, catQuery, setCatQuery, category, setCategory, amount, setAmount, months, setMonths, runRecommend, result, logTxn, cards, tierInfo, capWarnings }) {
     return (React.createElement("main", { style: S.main },
         React.createElement("section", { style: S.card },
             React.createElement("label", { style: S.label }, "어디서 결제해요?"),
-            React.createElement("div", { style: S.chipGrid }, ALL_CATEGORIES.map((c) => (React.createElement("button", { key: c, className: "chip", onClick: () => setCategory(c), style: { ...S.chip, ...(category === c ? S.chipActive : {}) } }, c)))),
+            React.createElement("div", { style: S.searchWrap },
+                React.createElement("span", { style: S.searchIcon }, "\uD83D\uDD0D"),
+                React.createElement("input", { type: "text", value: catQuery,
+                    onChange: (e) => setCatQuery(e.target.value),
+                    placeholder: "이용처 검색 (예: 쿠팡이츠, 스타벅스, KTX)",
+                    style: S.searchInput }),
+                catQuery ? React.createElement("button", { className: "chip", onClick: () => setCatQuery(""), style: S.searchClear }, "\u2715") : null),
+            (() => {
+                const q = catQuery.trim().toLowerCase();
+                const match = (c) => !q || c.toLowerCase().includes(q) ||
+                    (CATEGORY_KEYWORDS[c] || []).some((k) => k.toLowerCase().includes(q));
+                const secs = CATEGORY_GROUPS
+                    .map((g) => ({ section: g.section, items: g.items.filter(match) }))
+                    .filter((g) => g.items.length > 0);
+                if (secs.length === 0)
+                    return React.createElement("div", { style: S.noMatch }, `'${catQuery}'에 맞는 이용처가 없어요. 비슷한 항목을 직접 골라주세요.`);
+                return React.createElement("div", null, secs.map((g) => (
+                    React.createElement("div", { key: g.section, style: S.catSection },
+                        React.createElement("div", { style: S.catSectionLabel }, g.section),
+                        React.createElement("div", { style: S.chipGrid }, g.items.map((c) => (
+                            React.createElement("button", { key: c, className: "chip",
+                                onClick: () => { setCategory(c); setCatQuery(""); },
+                                style: { ...S.chip, ...(category === c ? S.chipActive : {}) } }, c))))))));
+            })(),
             capWarnings.length > 0 && (React.createElement("div", { style: S.warnStack }, capWarnings.map((w, i) => (React.createElement("div", { key: i, style: {
                     ...S.warnBox,
                     color: w.tone === "off" ? T.bad : T.warn,
@@ -963,7 +1039,14 @@ function makeStyles(T) {
         card: { background: T.surface, border: `1px solid ${T.border}`, borderRadius: 18, padding: 18 },
         label: { fontSize: 13, color: T.textDim, fontWeight: 700, letterSpacing: -0.2 },
         label2: { fontSize: 12, color: T.textDim, fontWeight: 600, marginTop: 12 },
-        chipGrid: { display: "flex", flexWrap: "wrap", gap: 7, marginTop: 12, marginBottom: 4 },
+        chipGrid: { display: "flex", flexWrap: "wrap", gap: 7, marginTop: 7 },
+        searchWrap: { display: "flex", alignItems: "center", gap: 8, marginTop: 11, background: T.chipBg, borderRadius: 12, padding: "10px 12px" },
+        searchIcon: { fontSize: 13, opacity: 0.6 },
+        searchInput: { flex: 1, minWidth: 0, background: "transparent", border: "none", color: T.text, fontSize: 13.5, fontWeight: 500 },
+        searchClear: { background: "transparent", border: "none", color: T.textFaint, fontSize: 13, padding: "0 2px", lineHeight: 1 },
+        catSection: { marginTop: 13 },
+        catSectionLabel: { fontSize: 11, fontWeight: 700, color: T.textFaint, letterSpacing: 0.3 },
+        noMatch: { marginTop: 14, fontSize: 12.5, color: T.textFaint, lineHeight: 1.6, padding: "10px 2px" },
         chip: { padding: "10px 16px", borderRadius: 12, border: "none", outline: "none", background: T.chipBg, color: T.chipText, fontSize: 13.5, fontWeight: 600, letterSpacing: -0.2, WebkitTapHighlightColor: "transparent", WebkitAppearance: "none", appearance: "none" },
         chipActive: { background: T.accent, color: T.onAccent, fontWeight: 700, boxShadow: `0 6px 16px -6px ${T.accent}` },
         warnStack: { marginTop: 12, display: "flex", flexDirection: "column", gap: 8 },

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'today-card-picker-v6';
+const CACHE_NAME = 'today-card-picker-v7';
 const APP_SHELL = [
   './',
   './index.html',
