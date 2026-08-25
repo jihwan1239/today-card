@@ -5,10 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="오늘 뭐로 긁지" />
+<meta name="apple-mobile-web-app-title" content="체피키" />
 <meta name="mobile-web-app-capable" content="yes" />
-<title>오늘 뭐로 긁지</title>
-<meta name="app-build" content="v7-categories-search" />
+<title>체피키 · Chepiky</title>
+<meta name="app-build" content="v10-chepiky-brand" />
 
 <!-- PWA 파일 연결 -->
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
@@ -195,12 +195,14 @@ const DEFAULT_CARDS = [
         overallCaps: [null],
         baselines: {},
         billingStartDay: 13,
+        excludeInstallment: true,  // 무이자할부 결제는 마일리지 적립 제외
         carryover: { "2026-09": 49000 },  // 연회비
         groups: {
             "특별적립": { caps: [2000], dailyCap: null },
         },
         notes: [
             "전월실적 조건 없음. 기본적립 1,000원당 1마일은 한도 없이 적용.",
+            "무이자할부로 결제하면 마일리지가 적립되지 않아요.",
             "특별적립(백화점·주유·커피·편의점·택시)은 4~5개 영역 합산 월 2,000마일까지 1,000원당 2마일.",
             "특별적립 한도를 넘기면 그 이후는 기본 1마일만 적립돼요.",
             "대중교통·택시·공과금·국세/지방세·아파트관리비·상품권 구매는 적립 제외 대상이라 카드사 안내가 엇갈려요. 택시 적립 여부는 명세서로 한 번 확인해보세요.",
@@ -342,6 +344,8 @@ const makeTheme = (dark) => dark ? {
     tabbar: "rgba(10,12,22,0.92)",
     heroBg: "linear-gradient(135deg, rgba(127,168,255,0.14), rgba(127,168,255,0.05))",
     heroBorder: "rgba(127,168,255,0.30)", heroLabel: "#B9CDFF", accentSoft: "rgba(127,168,255,0.18)",
+    cherry: "#FF6B8A", cherryOn: "#1A0710", cherrySoft: "rgba(255,107,138,0.16)",
+    cherryGlow: "rgba(255,107,138,0.45)",
 } : {
     bg: "linear-gradient(180deg, #F7F8FC 0%, #EFF1F8 100%)",
     text: "#1A1D2E", textDim: "#5B6280", textFaint: "#8B92AC",
@@ -353,6 +357,8 @@ const makeTheme = (dark) => dark ? {
     tabbar: "rgba(255,255,255,0.94)",
     heroBg: "linear-gradient(135deg, rgba(59,111,224,0.10), rgba(59,111,224,0.03))",
     heroBorder: "rgba(59,111,224,0.28)", heroLabel: "#2E56B0", accentSoft: "rgba(59,111,224,0.12)",
+    cherry: "#E23E63", cherryOn: "#FFFFFF", cherrySoft: "rgba(226,62,99,0.10)",
+    cherryGlow: "rgba(226,62,99,0.35)",
 };
 
 function CardPicker() {
@@ -670,7 +676,7 @@ function CardPicker() {
         .chip:active { transform: scale(.95); }
         `),
         React.createElement("header", { style: S.header },
-            React.createElement("div", { style: S.headerEyebrow }, "지갑 속 3장, 매번 정답은 하나"),
+            React.createElement("div", { style: S.headerEyebrow }, "체리만 쏙, 골라 담는 카드 생활"),
             React.createElement("h1", { style: S.headerTitle }, "오늘 뭐로 긁지")),
         !storageOk && (React.createElement("div", { style: S.errorBanner }, "저장 기능을 쓸 수 없는 환경이에요. 지금 입력한 내용은 화면을 닫으면 사라집니다.")),
         React.createElement(SummaryBar, { S: S, summary: summary, onPendingClick: () => { setTab("status"); setResult(null); setFocusPending((n) => n + 1); } }),
@@ -702,7 +708,7 @@ function SummaryBar({ S, summary, onPendingClick }) {
                 React.createElement("div", { style: S.summaryValue }, fmt(summary.confirmedAmount), React.createElement("span", { style: S.summaryUnit }, "원")),
                 React.createElement("div", { style: S.summaryFoot }, "실적 산정 기준")),
             React.createElement("div", { style: S.summaryCell },
-                React.createElement("div", { style: S.summaryLabel }, "당월 파킹률"),
+                React.createElement("div", { style: S.summaryLabel }, "당월 피킹률"),
                 React.createElement("div", { style: { ...S.summaryValue, color: S.summaryValueAccent.color } }, summary.parkingRate == null ? "—" : `${summary.parkingRate.toFixed(2)}%`),
                 React.createElement("div", { style: S.summaryFoot }, "혜택 ", fmt(summary.reward), "원")),
             summary.pendingCount > 0 && React.createElement("button", {
@@ -775,7 +781,7 @@ function RecommendTab({ S, T, catQuery, setCatQuery, category, setCategory, amou
                 ...S.resultCard,
                 ...(i === 0 ? { borderColor: r.card.accent, boxShadow: `0 0 0 1px ${r.card.accent}55` } : {}),
             } },
-            i === 0 && React.createElement("div", { style: { ...S.bestBadge, background: r.card.accent } }, "이 카드가 제일 이득"),
+            i === 0 && React.createElement("div", { style: S.bestBadge }, "이 카드가 제일 이득"),
             React.createElement("div", { style: S.resultTop },
                 React.createElement("div", { style: { ...S.cardSwatch, background: r.card.color } }),
                 React.createElement("div", null,
@@ -796,6 +802,7 @@ function RecommendTab({ S, T, catQuery, setCatQuery, category, setCategory, amou
 /* ============ 현황 ============ */
 function StatusTab({ S, cards, tierInfo, usageByCard, txns, thisMonth, lastMonth, thisMonthTotals, deleteTxn, confirmTxn, focusPending }) {
     const pendingRef = React.useRef(null);
+    const [cardFilter, setCardFilter] = useState("all");
     React.useEffect(() => {
         if (focusPending && pendingRef.current)
             pendingRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -806,6 +813,7 @@ function StatusTab({ S, cards, tierInfo, usageByCard, txns, thisMonth, lastMonth
     const list = txns.filter((t) => t.date.slice(0, 7) === thisMonth).sort((a, b) => (a.date < b.date ? 1 : -1));
     const pending = list.filter((t) => t.status === "pending");
     const confirmed = list.filter((t) => t.status === "confirmed");
+    const shown = cardFilter === "all" ? confirmed : confirmed.filter((t) => t.cardId === cardFilter);
     const startEdit = (t) => { setEditingId(t.id); setEditAmount(String(t.amount)); setEditMonths(t.installmentMonths || 1); };
     const submitEdit = async (id) => {
         const v = Number(editAmount);
@@ -883,9 +891,22 @@ function StatusTab({ S, cards, tierInfo, usageByCard, txns, thisMonth, lastMonth
                         React.createElement("button", { style: S.deleteBtn, onClick: () => deleteTxn(t.id) }, "삭제")))));
             })),
         React.createElement("section", { style: S.card },
-            React.createElement("div", { style: S.label }, "확정된 결제 · ", confirmed.length, "건"),
-            confirmed.length === 0 && React.createElement("div", { style: S.emptyState }, "확정된 결제가 아직 없어요."),
-            confirmed.map((t) => {
+            React.createElement("div", { style: S.filterHead },
+                React.createElement("span", { style: S.label }, "확정된 결제 · ", shown.length, "건"),
+                cardFilter !== "all" && React.createElement("span", { style: S.filterSum }, fmt(shown.reduce((a, t) => a + t.amount, 0)), "원")),
+            React.createElement("div", { style: S.filterRow },
+                [{ id: "all", name: "전체", color: null }].concat(cards.map((c) => ({ id: c.id, name: c.name, color: c.color })))
+                    .map((f) => {
+                        const cnt = f.id === "all" ? confirmed.length : confirmed.filter((t) => t.cardId === f.id).length;
+                        const on = cardFilter === f.id;
+                        return React.createElement("button", { key: f.id, className: "chip",
+                            onClick: () => setCardFilter(f.id),
+                            style: { ...S.filterChip, ...(on ? { background: f.color || S.chipActive.background, color: "#fff", fontWeight: 700 } : {}) } },
+                            f.color && React.createElement("span", { style: { ...S.dot, background: on ? "#fff" : f.color, marginRight: 5 } }),
+                            f.name, React.createElement("span", { style: { ...S.filterCount, opacity: on ? 0.85 : 0.55 } }, cnt));
+                    })),
+            shown.length === 0 && React.createElement("div", { style: S.emptyState }, cardFilter === "all" ? "확정된 결제가 아직 없어요." : "이 카드로 확정된 결제가 없어요."),
+            shown.map((t) => {
                 const c = cards.find((x) => x.id === t.cardId);
                 return (React.createElement("div", { key: t.id, style: S.txnRow },
                     React.createElement("div", { style: { ...S.dot, background: c ? c.color : "#888" } }),
@@ -1006,9 +1027,10 @@ function makeStyles(T) {
         app: { minHeight: "100vh", background: T.bg, color: T.text, fontFamily: "'Pretendard', -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif", paddingBottom: 92 },
         loadingScreen: { minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: T.bg },
         loadingDot: { width: 10, height: 10, borderRadius: 999, background: T.accent },
-        header: { padding: "28px 20px 14px" },
+        header: { padding: "calc(env(safe-area-inset-top, 0px) + 20px) 20px 14px" },
         headerEyebrow: { fontSize: 12, letterSpacing: 1.2, color: T.textFaint, textTransform: "uppercase", marginBottom: 6 },
-        headerTitle: { fontSize: 24, fontWeight: 700, margin: 0, letterSpacing: -0.3 },
+        headerTitle: { fontSize: 25, fontWeight: 800, margin: 0, letterSpacing: -0.8, display: "flex", alignItems: "center", gap: 4 },
+        headerDot: { color: T.cherry, fontSize: 26, lineHeight: 1, transform: "translateY(-2px)" },
         errorBanner: { margin: "0 16px 12px", padding: "10px 12px", borderRadius: 12, background: T.badBg, border: `1px solid ${T.bad}55`, color: T.bad, fontSize: 12, lineHeight: 1.5 },
         heroCell: { background: T.heroBg, border: `1px solid ${T.heroBorder}`, borderRadius: 18, padding: "16px 18px 15px", marginBottom: 10 },
         heroRow: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 },
@@ -1024,7 +1046,7 @@ function makeStyles(T) {
         summaryLabel: { fontSize: 11.5, color: T.textFaint, marginBottom: 5, fontWeight: 600 },
         summaryValue: { fontSize: 19, fontWeight: 800, color: T.text, letterSpacing: -0.5 },
         summaryUnit: { fontSize: 12, fontWeight: 600, color: T.textDim, marginLeft: 2 },
-        summaryValueAccent: { color: T.good },
+        summaryValueAccent: { color: T.cherry },
         summaryFoot: { fontSize: 10.5, color: T.textFaint, marginTop: 4 },
         pendingBorder: T.warn + "66",
         badgeNow: { fontSize: 10, fontWeight: 700, color: T.accent, background: T.accentSoft, padding: "2px 7px", borderRadius: 999, marginLeft: 6 },
@@ -1045,10 +1067,15 @@ function makeStyles(T) {
         searchInput: { flex: 1, minWidth: 0, background: "transparent", border: "none", color: T.text, fontSize: 13.5, fontWeight: 500 },
         searchClear: { background: "transparent", border: "none", color: T.textFaint, fontSize: 13, padding: "0 2px", lineHeight: 1 },
         catSection: { marginTop: 13 },
+        filterHead: { display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 },
+        filterSum: { fontSize: 12.5, fontWeight: 700, color: T.text },
+        filterRow: { display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10, marginBottom: 2 },
+        filterChip: { display: "inline-flex", alignItems: "center", padding: "7px 12px", borderRadius: 10, border: "none", background: T.chipBg, color: T.chipText, fontSize: 12.5, fontWeight: 600, WebkitTapHighlightColor: "transparent" },
+        filterCount: { marginLeft: 5, fontSize: 11, fontWeight: 700 },
         catSectionLabel: { fontSize: 11, fontWeight: 700, color: T.textFaint, letterSpacing: 0.3 },
         noMatch: { marginTop: 14, fontSize: 12.5, color: T.textFaint, lineHeight: 1.6, padding: "10px 2px" },
         chip: { padding: "10px 16px", borderRadius: 12, border: "none", outline: "none", background: T.chipBg, color: T.chipText, fontSize: 13.5, fontWeight: 600, letterSpacing: -0.2, WebkitTapHighlightColor: "transparent", WebkitAppearance: "none", appearance: "none" },
-        chipActive: { background: T.accent, color: T.onAccent, fontWeight: 700, boxShadow: `0 6px 16px -6px ${T.accent}` },
+        chipActive: { background: T.cherry, color: T.cherryOn, fontWeight: 700, boxShadow: `0 6px 18px -6px ${T.cherryGlow}` },
         warnStack: { marginTop: 12, display: "flex", flexDirection: "column", gap: 8 },
         warnBox: { fontSize: 12, lineHeight: 1.55, border: "1px solid", borderRadius: 12, padding: "10px 12px" },
         hint: { marginTop: 10, fontSize: 11.5, color: T.textFaint, lineHeight: 1.55 },
@@ -1056,10 +1083,10 @@ function makeStyles(T) {
         amountInput: { flex: 1, background: "transparent", border: "none", color: T.text, fontSize: 28, fontWeight: 700, width: "100%" },
         koreanAmount: { fontSize: 13, color: T.accent, fontWeight: 600, marginTop: 6, letterSpacing: -0.2 },
         won: { fontSize: 16, color: T.textDim },
-        primaryBtn: { marginTop: 18, width: "100%", padding: "14px 0", borderRadius: 14, border: "none", background: T.accent, color: T.onAccent, fontWeight: 700, fontSize: 15.5 },
+        primaryBtn: { marginTop: 18, width: "100%", padding: "15px 0", borderRadius: 14, border: "none", background: `linear-gradient(115deg, ${T.accent} 0%, ${T.cherry} 100%)`, color: "#fff", fontWeight: 800, fontSize: 15.5, letterSpacing: -0.3, boxShadow: `0 8px 22px -10px ${T.cherryGlow}` },
         resultWrap: { display: "flex", flexDirection: "column", gap: 12 },
         resultCard: { position: "relative", borderRadius: 18, border: `1px solid ${T.border}`, padding: "18px 16px 16px", background: T.surface },
-        bestBadge: { position: "absolute", top: -11, left: 16, fontSize: 11, fontWeight: 800, color: "#fff", padding: "3px 10px", borderRadius: 999 },
+        bestBadge: { position: "absolute", top: -11, left: 16, fontSize: 11, fontWeight: 800, color: "#fff", padding: "4px 11px", borderRadius: 999, background: T.cherry, boxShadow: `0 4px 12px -4px ${T.cherryGlow}` },
         resultTop: { display: "flex", alignItems: "center", gap: 12 },
         cardSwatch: { width: 34, height: 34, borderRadius: 10, flexShrink: 0 },
         resultName: { fontSize: 15.5, fontWeight: 700 },
@@ -1113,7 +1140,7 @@ function makeStyles(T) {
         resetBtn: { padding: "12px 0", borderRadius: 12, border: `1px solid ${T.borderStrong}`, background: "transparent", color: T.textDim, fontSize: 13, fontWeight: 600 },
         tabbar: { position: "fixed", bottom: 0, left: 0, right: 0, display: "flex", background: T.tabbar, backdropFilter: "blur(12px)", borderTop: `1px solid ${T.border}`, padding: "10px 8px calc(10px + env(safe-area-inset-bottom))" },
         tabBtn: { flex: 1, background: "transparent", border: "none", color: T.textFaint, fontSize: 12.5, fontWeight: 600, padding: "8px 0" },
-        tabBtnActive: { color: T.text },
+        tabBtnActive: { color: T.text, fontWeight: 800, borderTop: `2px solid ${T.cherry}`, marginTop: -2, paddingTop: 8 },
     };
 }
 

@@ -1,15 +1,15 @@
 {
-  "name": "오늘 뭐로 긁지",
-  "short_name": "오늘 뭐로 긁지",
+  "name": "체피키",
+  "short_name": "체피키",
   "id": "./",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#08090f",
-  "theme_color": "#08090f",
+  "background_color": "#0C0E1A",
+  "theme_color": "#0C0E1A",
   "lang": "ko-KR",
-  "description": "카드 혜택을 비교하고 결제 기록을 로컬에 저장하는 개인용 카드 추천 앱",
+  "description": "체리피커를 위한 카드 추천 · 혜택 한도 관리 앱",
   "icons": [
     {
       "src": "./icons/icon-192.png",
