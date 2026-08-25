@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="체피키" />
 <meta name="mobile-web-app-capable" content="yes" />
-<title>체피키 · Chepiky</title>
-<meta name="app-build" content="v11-chepiky-icons" />
+<title>체피키 · Chepicky</title>
+<meta name="app-build" content="v11-chepicky-icons" />
 
 <!-- PWA 파일 연결 -->
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png?v=10" />
@@ -695,7 +695,7 @@ function CardPicker() {
             React.createElement("div", { style: S.headerEyebrow }, "체리만 쏙, 골라 담는 카드 생활"),
             React.createElement("h1", { style: S.headerTitle },
                 React.createElement("span", { style: S.headerCherry }, "\uD83C\uDF52"),
-                React.createElement("span", null, "Chepiky"))),
+                React.createElement("span", null, "Chepicky"))),
         !storageOk && (React.createElement("div", { style: S.errorBanner }, "저장 기능을 쓸 수 없는 환경이에요. 지금 입력한 내용은 화면을 닫으면 사라집니다.")),
         React.createElement(SummaryBar, { S: S, summary: summary, onPendingClick: () => { setTab("status"); setResult(null); setFocusPending((n) => n + 1); } }),
         React.createElement("div", { className: "tabview", key: tab },
