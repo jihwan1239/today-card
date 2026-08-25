@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chepiky-v10';
+const CACHE_NAME = 'chepiky-v11';
 const APP_SHELL = [
   './',
   './index.html',
@@ -6,7 +6,10 @@ const APP_SHELL = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/maskable-512.png',
-  './icons/apple-touch-icon.png'
+  './icons/apple-touch-icon.png',
+  './icons/apple-touch-icon-120.png',
+  './icons/apple-touch-icon-152.png',
+  './icons/apple-touch-icon-167.png'
 ];
 
 self.addEventListener('install', event => {

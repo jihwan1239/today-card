@@ -8,11 +8,15 @@
 <meta name="apple-mobile-web-app-title" content="체피키" />
 <meta name="mobile-web-app-capable" content="yes" />
 <title>체피키 · Chepiky</title>
-<meta name="app-build" content="v10-chepiky-brand" />
+<meta name="app-build" content="v11-chepiky-icons" />
 
 <!-- PWA 파일 연결 -->
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-<link rel="icon" href="icons/icon-192.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png?v=10" />
+<link rel="apple-touch-icon" sizes="167x167" href="icons/apple-touch-icon-167.png?v=10" />
+<link rel="apple-touch-icon" sizes="152x152" href="icons/apple-touch-icon-152.png?v=10" />
+<link rel="apple-touch-icon" sizes="120x120" href="icons/apple-touch-icon-120.png?v=10" />
+<link rel="apple-touch-icon-precomposed" href="icons/apple-touch-icon.png?v=10" />
+<link rel="icon" href="icons/icon-192.png?v=10" />
 <link rel="manifest" href="manifest.webmanifest" />
 
 <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
@@ -674,16 +678,36 @@ function CardPicker() {
                 border: 0 !important; outline: 0 !important; }
         .chip:focus, .chip:focus-visible, .chip:active, .chip:hover { border: 0 !important; outline: 0 !important; }
         .chip:active { transform: scale(.95); }
+        @keyframes tabIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .tabview { animation: tabIn .26s cubic-bezier(.22,.9,.3,1) both; }
+        .tabbtn { position: relative; transition: color .18s ease; }
+        .tabbtn span.ink {
+          position: absolute; left: 50%; bottom: 2px; height: 3px; width: 22px;
+          margin-left: -11px; border-radius: 999px; transform: scaleX(0);
+          transition: transform .24s cubic-bezier(.22,.9,.3,1), opacity .18s ease; opacity: 0;
+        }
+        .tabbtn.on span.ink { transform: scaleX(1); opacity: 1; }
         `),
         React.createElement("header", { style: S.header },
             React.createElement("div", { style: S.headerEyebrow }, "체리만 쏙, 골라 담는 카드 생활"),
-            React.createElement("h1", { style: S.headerTitle }, "오늘 뭐로 긁지")),
+            React.createElement("h1", { style: S.headerTitle },
+                React.createElement("span", { style: S.headerCherry }, "\uD83C\uDF52"),
+                React.createElement("span", null, "Chepiky"))),
         !storageOk && (React.createElement("div", { style: S.errorBanner }, "저장 기능을 쓸 수 없는 환경이에요. 지금 입력한 내용은 화면을 닫으면 사라집니다.")),
         React.createElement(SummaryBar, { S: S, summary: summary, onPendingClick: () => { setTab("status"); setResult(null); setFocusPending((n) => n + 1); } }),
-        tab === "recommend" && (React.createElement(RecommendTab, { S: S, T: T, catQuery: catQuery, setCatQuery: setCatQuery, category: category, setCategory: setCategory, amount: amount, setAmount: setAmount, months: months, setMonths: setMonths, runRecommend: runRecommend, result: result, logTxn: logTxn, cards: cards, tierInfo: tierInfo, capWarnings: capWarnings })),
+        React.createElement("div", { className: "tabview", key: tab },
+            tab === "recommend" && (React.createElement(RecommendTab, { S: S, T: T, catQuery: catQuery, setCatQuery: setCatQuery, category: category, setCategory: setCategory, amount: amount, setAmount: setAmount, months: months, setMonths: setMonths, runRecommend: runRecommend, result: result, logTxn: logTxn, cards: cards, tierInfo: tierInfo, capWarnings: capWarnings })),
         tab === "status" && (React.createElement(StatusTab, { S: S, cards: cards, tierInfo: tierInfo, usageByCard: usageByCard, txns: txns, thisMonth: thisMonth, lastMonth: lastMonth, thisMonthTotals: thisMonthTotals, deleteTxn: deleteTxn, confirmTxn: confirmTxn, focusPending: focusPending })),
-        tab === "settings" && (React.createElement(SettingsTab, { S: S, cards: cards, updateCard: updateCard, resetDefaults: () => saveCards(DEFAULT_CARDS), storageOk: storageOk, lastSaved: lastSaved, txnCount: txns.length, thisMonthKey: thisMonth, prevMonthKey: lastMonth, otherBilling: otherBilling, saveOther: saveOther, payMonth: summary.payMonth })),
-        React.createElement("nav", { style: S.tabbar }, [["recommend", "추천"], ["status", "이번 달 현황"], ["settings", "카드 설정"]].map(([k, label]) => (React.createElement("button", { key: k, onClick: () => { setTab(k); setResult(null); }, style: { ...S.tabBtn, ...(tab === k ? S.tabBtnActive : {}) } }, label))))));
+        tab === "settings" && (React.createElement(SettingsTab, { S: S, cards: cards, updateCard: updateCard, resetDefaults: () => saveCards(DEFAULT_CARDS), storageOk: storageOk, lastSaved: lastSaved, txnCount: txns.length, thisMonthKey: thisMonth, prevMonthKey: lastMonth, otherBilling: otherBilling, saveOther: saveOther, payMonth: summary.payMonth }))),
+        React.createElement("nav", { style: S.tabbar }, [["recommend", "추천"], ["status", "이번 달 현황"], ["settings", "카드 설정"]].map(([k, label]) => (
+            React.createElement("button", { key: k, className: "tabbtn" + (tab === k ? " on" : ""),
+                onClick: () => { setTab(k); setResult(null); window.scrollTo({ top: 0, behavior: "smooth" }); },
+                style: { ...S.tabBtn, ...(tab === k ? S.tabBtnActive : {}) } },
+                label,
+                React.createElement("span", { className: "ink", style: { background: T.cherry } })))))));
 }
 
 /* ============ 요약 ============ */
@@ -1139,8 +1163,8 @@ function makeStyles(T) {
         settingCatName: { fontSize: 13, color: T.text, fontWeight: 600 },
         resetBtn: { padding: "12px 0", borderRadius: 12, border: `1px solid ${T.borderStrong}`, background: "transparent", color: T.textDim, fontSize: 13, fontWeight: 600 },
         tabbar: { position: "fixed", bottom: 0, left: 0, right: 0, display: "flex", background: T.tabbar, backdropFilter: "blur(12px)", borderTop: `1px solid ${T.border}`, padding: "10px 8px calc(10px + env(safe-area-inset-bottom))" },
-        tabBtn: { flex: 1, background: "transparent", border: "none", color: T.textFaint, fontSize: 12.5, fontWeight: 600, padding: "8px 0" },
-        tabBtnActive: { color: T.text, fontWeight: 800, borderTop: `2px solid ${T.cherry}`, marginTop: -2, paddingTop: 8 },
+        tabBtn: { flex: 1, background: "transparent", border: "none", color: T.textFaint, fontSize: 12.5, fontWeight: 600, padding: "9px 0 11px" },
+        tabBtnActive: { color: T.text, fontWeight: 800 },
     };
 }
 
